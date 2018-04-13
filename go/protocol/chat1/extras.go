@@ -355,6 +355,14 @@ func (m MessageUnboxedValid) IsExploding() bool {
 	return m.GetEphemeralMetadata() != nil
 }
 
+func (m MessagePlaintext) GetEphemeralMetadata() *MsgEphemeralMetadata {
+	return m.ClientHeader.EphemeralMetadata
+}
+
+func (m MessagePlaintext) IsExploding() bool {
+	return m.GetEphemeralMetadata() != nil
+}
+
 func (b MessageBody) IsNil() bool {
 	return b == MessageBody{}
 }

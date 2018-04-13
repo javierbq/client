@@ -787,6 +787,13 @@
             "MerkleRoot"
           ],
           "name": "merkleRoot"
+        },
+        {
+          "type": [
+            null,
+            "MsgEphemeralMetadata"
+          ],
+          "name": "ephemeralMetadata"
         }
       ]
     },
