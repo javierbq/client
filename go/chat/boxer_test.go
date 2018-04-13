@@ -144,7 +144,7 @@ func TestChatMessageBox(t *testing.T) {
 		msg := textMsg(t, "hello", mbVersion)
 		tc, boxer := setupChatTest(t, "box")
 		defer tc.Cleanup()
-		boxed, err := boxer.box(context.TODO(), msg, key, getSigningKeyPairForTest(t, tc, nil), mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, getSigningKeyPairForTest(t, tc, nil), mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +173,7 @@ func TestChatMessageUnbox(t *testing.T) {
 
 		signKP := getSigningKeyPairForTest(t, tc, u)
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		require.NoError(t, err)
 		boxed = remarshalBoxed(t, *boxed)
 
@@ -221,7 +221,7 @@ func TestChatMessageMissingOutboxID(t *testing.T) {
 
 	signKP := getSigningKeyPairForTest(t, tc, u)
 
-	boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+	boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 	require.NoError(t, err)
 	boxed = remarshalBoxed(t, *boxed)
 
@@ -267,7 +267,7 @@ func TestChatMessageInvalidBodyHash(t *testing.T) {
 			return sum[:]
 		}
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -442,7 +442,7 @@ func TestChatMessageInvalidHeaderSig(t *testing.T) {
 			return sig
 		}
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -491,7 +491,7 @@ func TestChatMessageInvalidSenderKey(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -554,7 +554,7 @@ func TestChatMessageRevokedKeyThenSent(t *testing.T) {
 		// Sign a message using a key of u's that has been revoked
 		t.Logf("signing message")
 		msg := textMsgWithSender(t, text, gregor1.UID(u.User.GetUID().ToBytes()), mbVersion)
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		require.NoError(t, err)
 
 		boxed.ServerHeader = &chat1.MessageServerHeader{
@@ -609,7 +609,7 @@ func TestChatMessageSentThenRevokedSenderKey(t *testing.T) {
 		// Sign a message using a key of u's that has not yet been revoked
 		t.Logf("signing message")
 		msg := textMsgWithSender(t, text, gregor1.UID(u.User.GetUID().ToBytes()), mbVersion)
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		require.NoError(t, err)
 
 		boxed.ServerHeader = &chat1.MessageServerHeader{
@@ -719,7 +719,7 @@ func TestChatMessageSenderMismatch(t *testing.T) {
 
 		signKP := getSigningKeyPairForTest(t, tc, u)
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -758,7 +758,7 @@ func TestChatMessageDeletes(t *testing.T) {
 
 		signKP := getSigningKeyPairForTest(t, tc, u)
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -797,7 +797,7 @@ func TestChatMessageDeleted(t *testing.T) {
 
 			signKP := getSigningKeyPairForTest(t, tc, u)
 
-			boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+			boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -839,7 +839,7 @@ func TestChatMessageDeletedNotSuperseded(t *testing.T) {
 
 		signKP := getSigningKeyPairForTest(t, tc, u)
 
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -881,7 +881,7 @@ func TestChatMessageDeleteHistory(t *testing.T) {
 
 	signKP := getSigningKeyPairForTest(t, tc, u)
 
-	boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+	boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1250,7 +1250,7 @@ func TestChatMessageBodyHashReplay(t *testing.T) {
 				ConversationID: convID,
 			},
 		}
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1306,7 +1306,7 @@ func TestChatMessagePrevPointerInconsistency(t *testing.T) {
 		makeMsg := func(id chat1.MessageID, prevs []chat1.MessagePreviousPointer) *chat1.MessageBoxed {
 			msg := textMsgWithSender(t, "foo text", gregor1.UID(u.User.GetUID().ToBytes()), mbVersion)
 			msg.ClientHeader.Prev = prevs
-			boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+			boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 			require.NoError(t, err)
 			boxed.ServerHeader = &chat1.MessageServerHeader{
 				Ctime:     gregor1.ToTime(time.Now()),
@@ -1387,7 +1387,7 @@ func TestChatMessageBadConvID(t *testing.T) {
 		// This message has an all zeros ConversationIDTriple, but that's fine. We
 		// can still extract the ConvID from it.
 		msg := textMsgWithSender(t, text, gregor1.UID(u.User.GetUID().ToBytes()), mbVersion)
-		boxed, err := boxer.box(context.TODO(), msg, key, signKP, mbVersion)
+		boxed, err := boxer.box(context.TODO(), msg, key, nil, signKP, mbVersion)
 		require.NoError(t, err)
 		boxed.ServerHeader = &chat1.MessageServerHeader{
 			Ctime:     gregor1.ToTime(time.Now()),
@@ -1447,12 +1447,12 @@ func (k *KeyFinderMock) FindForDecryption(ctx context.Context,
 }
 
 func (k *KeyFinderMock) EphemeralKeyForEncryption(ctx context.Context, tlfName string, tlfID chat1.TLFID,
-	membersType chat1.ConversationMembersType, public bool) {
+	membersType chat1.ConversationMembersType, public bool) (keybase1.TeamEk, error) {
 	panic("unimplemented")
 }
 
 func (k *KeyFinderMock) EphemeralKeyForDecryption(ctx context.Context, tlfName string, tlfID chat1.TLFID,
-	membersType chat1.ConversationMembersType, public bool, generation keybase1.EkGeneration) {
+	membersType chat1.ConversationMembersType, public bool, generation keybase1.EkGeneration) (keybase1.TeamEk, error) {
 	panic("unimplemented")
 }
 

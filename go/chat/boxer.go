@@ -1090,6 +1090,22 @@ func (b *Boxer) BoxMessage(ctx context.Context, msg chat1.MessagePlaintext,
 		return nil, NewBoxingError(msg, false)
 	}
 
+	// If the message is exploding, load the ephemeral key. Make sure we're not
+	// using MessageBoxedVersion_V1, since that doesn't support exploding
+	// messages.
+	var bodyEphemeralKey *keybase1.TeamEk
+	if msg.ClientHeader.EphemeralMetadata != nil {
+		ek, err := CtxKeyFinder(ctx, b.G()).EphemeralKeyForEncryption(
+			ctx, tlfName, msg.ClientHeader.Conv.Tlfid, membersType, msg.ClientHeader.TlfPublic)
+		if err != nil {
+			return nil, NewBoxingCryptKeysError(err)
+		}
+		bodyEphemeralKey = &ek
+		if b.boxWithVersion == chat1.MessageBoxedVersion_V1 {
+			return nil, fmt.Errorf("cannot use exploding messages with V1")
+		}
+	}
+
 	err = b.attachMerkleRoot(ctx, &msg)
 	if err != nil {
 		return nil, err
@@ -1101,7 +1117,7 @@ func (b *Boxer) BoxMessage(ctx context.Context, msg chat1.MessagePlaintext,
 		return nil, NewBoxingError(msg, true)
 	}
 
-	boxed, err := b.box(ctx, msg, encryptionKey, signingKeyPair, b.boxWithVersion)
+	boxed, err := b.box(ctx, msg, encryptionKey, bodyEphemeralKey, signingKeyPair, b.boxWithVersion)
 	if err != nil {
 		return nil, NewBoxingError(err.Error(), true)
 	}
@@ -1161,7 +1177,7 @@ func (b *Boxer) preBoxCheck(ctx context.Context, messagePlaintext chat1.MessageP
 }
 
 func (b *Boxer) box(ctx context.Context, messagePlaintext chat1.MessagePlaintext, encryptionKey types.CryptKey,
-	signingKeyPair libkb.NaclSigningKeyPair, version chat1.MessageBoxedVersion) (*chat1.MessageBoxed, error) {
+	bodyEphemeralKey *keybase1.TeamEk, signingKeyPair libkb.NaclSigningKeyPair, version chat1.MessageBoxedVersion) (*chat1.MessageBoxed, error) {
 	err := b.preBoxCheck(ctx, messagePlaintext)
 	if err != nil {
 		return nil, err
@@ -1174,8 +1190,9 @@ func (b *Boxer) box(ctx context.Context, messagePlaintext chat1.MessagePlaintext
 			b.Debug(ctx, "error boxing message version: %v", version)
 		}
 		return res, err
+	// V3 is the same as V2, except that it indicates exploding message support.
 	case chat1.MessageBoxedVersion_V2:
-		res, err := b.boxV2(messagePlaintext, encryptionKey, signingKeyPair)
+		res, err := b.boxV2orV3(messagePlaintext, encryptionKey, bodyEphemeralKey, signingKeyPair)
 		if err != nil {
 			b.Debug(ctx, "error boxing message version: %v", version)
 		}
@@ -1246,8 +1263,8 @@ func (b *Boxer) boxV1(messagePlaintext chat1.MessagePlaintext, key types.CryptKe
 	return boxed, nil
 }
 
-func (b *Boxer) boxV2(messagePlaintext chat1.MessagePlaintext, baseEncryptionKey types.CryptKey,
-	signingKeyPair libkb.NaclSigningKeyPair) (*chat1.MessageBoxed, error) {
+func (b *Boxer) boxV2orV3(messagePlaintext chat1.MessagePlaintext, baseEncryptionKey types.CryptKey,
+	bodyEphemeralKey *keybase1.TeamEk, signingKeyPair libkb.NaclSigningKeyPair) (*chat1.MessageBoxed, error) {
 
 	if messagePlaintext.ClientHeader.MerkleRoot == nil {
 		return nil, NewBoxingError("cannot send message without merkle root", false)
