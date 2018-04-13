@@ -1263,8 +1263,15 @@ func (b *Boxer) boxV1(messagePlaintext chat1.MessagePlaintext, key types.CryptKe
 	return boxed, nil
 }
 
+// V3 is just V2 but with exploding messages support. All future versions after
+// V3 will support exploding messages without a version distinction.
 func (b *Boxer) boxV2orV3(messagePlaintext chat1.MessagePlaintext, baseEncryptionKey types.CryptKey,
 	bodyEphemeralKey *keybase1.TeamEk, signingKeyPair libkb.NaclSigningKeyPair) (*chat1.MessageBoxed, error) {
+
+	version := chat1.MessageBoxedVersion_V2
+	if bodyEphemeralKey != nil {
+		version = chat1.MessageBoxedVersion_V3
+	}
 
 	if messagePlaintext.ClientHeader.MerkleRoot == nil {
 		return nil, NewBoxingError("cannot send message without merkle root", false)
